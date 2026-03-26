@@ -1,0 +1,298 @@
+repeat task.wait() until game:IsLoaded()
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
+
+local player = Players.LocalPlayer
+
+local FILE = "neo hub_config.json"
+
+local config = {
+dropEnabled=false,
+tpEnabled=false,
+infJump=false,
+dropX=200,
+dropY=300,
+tpX=320,
+tpY=300
+}
+
+if isfile and isfile(FILE) then
+config = HttpService:JSONDecode(readfile(FILE))
+end
+
+-- DROP GUI
+local dropGui = Instance.new("ScreenGui",game.CoreGui)
+dropGui.Enabled = config.dropEnabled
+dropGui.ResetOnSpawn=false
+
+local dropBtn = Instance.new("TextButton",dropGui)
+dropBtn.Size=UDim2.new(0,90,0,36)
+dropBtn.Position=UDim2.new(0,config.dropX,0,config.dropY)
+dropBtn.BackgroundColor3=Color3.fromRGB(0,0,0)
+dropBtn.Text="Drop"
+dropBtn.TextColor3=Color3.new(1,1,1)
+dropBtn.Font=Enum.Font.Gotham
+dropBtn.TextSize=14
+dropBtn.Active=true
+dropBtn.Draggable=true
+Instance.new("UICorner",dropBtn)
+local s1=Instance.new("UIStroke",dropBtn)
+s1.Color=Color3.new(1,1,1)
+
+-- TP GUI
+local tpGui = Instance.new("ScreenGui",game.CoreGui)
+tpGui.Enabled = config.tpEnabled
+tpGui.ResetOnSpawn=false
+
+local tpBtn = Instance.new("TextButton",tpGui)
+tpBtn.Size=UDim2.new(0,90,0,36)
+tpBtn.Position=UDim2.new(0,config.tpX,0,config.tpY)
+tpBtn.BackgroundColor3=Color3.fromRGB(0,0,0)
+tpBtn.Text="TP"
+tpBtn.TextColor3=Color3.new(1,1,1)
+tpBtn.Font=Enum.Font.Gotham
+tpBtn.TextSize=14
+tpBtn.Active=true
+tpBtn.Draggable=true
+Instance.new("UICorner",tpBtn)
+local s2=Instance.new("UIStroke",tpBtn)
+s2.Color=Color3.new(1,1,1)
+
+-- DETECÇÃO TP
+local detectA = Vector3.new(-466.51,-7.81,113.79)
+local detectB = Vector3.new(-466.43,-7.89,6.55)
+
+local routeA={
+Vector3.new(-432.87,-7.98,54.04),
+Vector3.new(-461.95,-7.98,97.28),
+Vector3.new(-483.72,-6.08,94.77)
+}
+
+local routeB={
+Vector3.new(-447.12,-7.98,61.52),
+Vector3.new(-463.56,-7.98,25.78),
+Vector3.new(-486.73,-5.51,23.99)
+}
+
+local chosenRoute=nil
+
+task.spawn(function()
+while not chosenRoute do
+task.wait(.1)
+local char=player.Character
+if char and char:FindFirstChild("HumanoidRootPart") then
+local pos=char.HumanoidRootPart.Position
+if (pos-detectA).Magnitude<5 then
+chosenRoute=routeB
+elseif (pos-detectB).Magnitude<5 then
+chosenRoute=routeA
+end
+end
+end
+end)
+
+-- DROP (FIXED)
+local dropRunning=false
+
+dropBtn.MouseButton1Click:Connect(function()
+
+if dropRunning then return end
+dropRunning=true
+
+local char=player.Character or player.CharacterAdded:Wait()
+local hrp=char:WaitForChild("HumanoidRootPart")
+
+local startCF=hrp.CFrame
+
+hrp.AssemblyLinearVelocity=Vector3.new(0,120,0)
+
+task.wait(0.35)
+
+hrp.AssemblyLinearVelocity=Vector3.zero
+hrp.CFrame=startCF
+
+dropRunning=false
+
+end)
+
+-- TP (FIXED)
+tpBtn.MouseButton1Click:Connect(function()
+
+local char = player.Character
+if not char then return end
+
+local root = char:FindFirstChild("HumanoidRootPart")
+if not root then return end
+
+if not chosenRoute then
+repeat task.wait() until chosenRoute
+end
+
+for _,pos in ipairs(chosenRoute) do
+root.CFrame = CFrame.new(pos)
+task.wait(.2)
+end
+
+end)
+
+-- INFINITE JUMP
+local infinityJumpEnabled=config.infJump
+local jumpForce=50
+local clampFallSpeed=80
+
+RunService.Heartbeat:Connect(function()
+if not infinityJumpEnabled then return end
+local char=player.Character
+if not char then return end
+
+local hrp=char:FindFirstChild("HumanoidRootPart")
+if hrp and hrp.Velocity.Y < -clampFallSpeed then
+hrp.Velocity=Vector3.new(hrp.Velocity.X,-clampFallSpeed,hrp.Velocity.Z)
+end
+end)
+
+UIS.JumpRequest:Connect(function()
+if not infinityJumpEnabled then return end
+local char=player.Character
+if not char then return end
+
+local hrp=char:FindFirstChild("HumanoidRootPart")
+if hrp then
+hrp.Velocity=Vector3.new(hrp.Velocity.X,jumpForce,hrp.Velocity.Z)
+end
+end)
+
+-- PAINEL
+local gui=Instance.new("ScreenGui",game.CoreGui)
+gui.ResetOnSpawn=false
+
+local main=Instance.new("Frame",gui)
+main.Size=UDim2.new(0,190,0,170)
+main.Position=UDim2.new(.5,-95,.5,-85)
+main.BackgroundColor3=Color3.fromRGB(0,0,0)
+main.Active=true
+main.Draggable=true
+Instance.new("UICorner",main)
+local s3=Instance.new("UIStroke",main)
+s3.Color=Color3.new(1,1,1)
+
+local title=Instance.new("TextLabel",main)
+title.Size=UDim2.new(1,0,0,25)
+title.BackgroundTransparency=1
+title.Text="NEO PAINEL"
+title.TextColor3=Color3.new(1,1,1)
+title.Font=Enum.Font.GothamBold
+title.TextSize=13
+
+local close=Instance.new("TextButton",main)
+close.Size=UDim2.new(0,18,0,18)
+close.Position=UDim2.new(1,-22,0,3)
+close.Text="X"
+close.BackgroundTransparency=1
+close.TextColor3=Color3.new(1,1,1)
+
+close.MouseButton1Click:Connect(function()
+gui:Destroy()
+end)
+
+-- CREATE TOGGLE
+local function createToggle(name,posY,default,callback)
+
+local label=Instance.new("TextLabel",main)
+label.Position=UDim2.new(0,10,0,posY)
+label.Size=UDim2.new(0,130,0,20)
+label.BackgroundTransparency=1
+label.Text=name
+label.TextColor3=Color3.new(1,1,1)
+label.Font=Enum.Font.Gotham
+label.TextSize=12
+label.TextXAlignment="Left"
+
+local toggle=Instance.new("Frame",main)
+toggle.Position=UDim2.new(1,-55,0,posY)
+toggle.Size=UDim2.new(0,40,0,20)
+toggle.BackgroundColor3=Color3.fromRGB(40,40,40)
+Instance.new("UICorner",toggle).CornerRadius=UDim.new(1,0)
+
+local circle=Instance.new("Frame",toggle)
+circle.Size=UDim2.new(0,16,0,16)
+circle.Position=UDim2.new(0,2,0,2)
+circle.BackgroundColor3=Color3.new(1,1,1)
+Instance.new("UICorner",circle).CornerRadius=UDim.new(1,0)
+
+local state=default
+
+if state then
+circle.Position=UDim2.new(1,-18,0,2)
+end
+
+toggle.InputBegan:Connect(function()
+
+state=not state
+
+if state then
+circle:TweenPosition(UDim2.new(1,-18,0,2),"Out","Quad",.15,true)
+else
+circle:TweenPosition(UDim2.new(0,2,0,2),"Out","Quad",.15,true)
+end
+
+callback(state)
+
+end)
+
+return function() return state end
+
+end
+
+local getDrop=createToggle("Drop Toggle",45,config.dropEnabled,function(v)
+dropGui.Enabled=v
+end)
+
+local getTP=createToggle("Tp Toggle",75,config.tpEnabled,function(v)
+tpGui.Enabled=v
+end)
+
+local getInf=createToggle("Infinite Jump",105,config.infJump,function(v)
+infinityJumpEnabled=v
+end)
+
+-- SAVE
+local save=Instance.new("TextButton",main)
+save.Size=UDim2.new(0,110,0,25)
+save.Position=UDim2.new(.5,-55,1,-35)
+save.BackgroundColor3=Color3.fromRGB(0,0,0)
+save.Text="Save🗑️"
+save.TextColor3=Color3.new(1,1,1)
+save.Font=Enum.Font.Gotham
+save.TextSize=13
+Instance.new("UICorner",save)
+local s4=Instance.new("UIStroke",save)
+s4.Color=Color3.new(1,1,1)
+
+save.MouseButton1Click:Connect(function()
+
+local dPos=dropBtn.Position
+local tPos=tpBtn.Position
+
+local data={
+dropEnabled=getDrop(),
+tpEnabled=getTP(),
+infJump=getInf(),
+dropX=dPos.X.Offset,
+dropY=dPos.Y.Offset,
+tpX=tPos.X.Offset,
+tpY=tPos.Y.Offset
+}
+
+if writefile then
+writefile(FILE,HttpService:JSONEncode(data))
+end
+
+save.Text="Saved ✓"
+task.wait(1)
+save.Text="Save🗑️"
+
+end)
